@@ -38,32 +38,50 @@ enum class StringExpressionType { Lower, Upper };
 class StringExpression : public AbstractExpression {
  public:
   StringExpression(AbstractExpressionRef arg, StringExpressionType expr_type)
-      : AbstractExpression({std::move(arg)}, TypeId::VARCHAR), expr_type_{expr_type} {
+      : AbstractExpression({std::move(arg)}, TypeId::VARCHAR),
+        expr_type_{expr_type} {
     if (GetChildAt(0)->GetReturnType() != TypeId::VARCHAR) {
-      throw bustub::NotImplementedException("expect the first arg to be varchar");
+      throw bustub::NotImplementedException(
+          "expect the first arg to be varchar");
     }
   }
 
   auto Compute(const std::string &val) const -> std::string {
-    // TODO(student): implement upper / lower.
-    return {};
+    std::string result = val;
+    switch (expr_type_) {
+      case StringExpressionType::Lower:
+        std::transform(result.begin(), result.end(), result.begin(), ::tolower);
+        break;
+      case StringExpressionType::Upper:
+        std::transform(result.begin(), result.end(), result.begin(), ::toupper);
+        break;
+      default:
+        throw bustub::NotImplementedException("Unknown StringExpressionType");
+    }
+    return result;
   }
 
-  auto Evaluate(const Tuple *tuple, const Schema &schema) const -> Value override {
+  auto Evaluate(const Tuple *tuple,
+                const Schema &schema) const -> Value override {
     Value val = GetChildAt(0)->Evaluate(tuple, schema);
     auto str = val.GetAs<char *>();
     return ValueFactory::GetVarcharValue(Compute(str));
   }
 
-  auto EvaluateJoin(const Tuple *left_tuple, const Schema &left_schema, const Tuple *right_tuple,
+  auto EvaluateJoin(const Tuple *left_tuple, const Schema &left_schema,
+                    const Tuple *right_tuple,
                     const Schema &right_schema) const -> Value override {
-    Value val = GetChildAt(0)->EvaluateJoin(left_tuple, left_schema, right_tuple, right_schema);
+    Value val = GetChildAt(0)->EvaluateJoin(left_tuple, left_schema,
+                                            right_tuple, right_schema);
     auto str = val.GetAs<char *>();
     return ValueFactory::GetVarcharValue(Compute(str));
   }
 
-  /** @return the string representation of the expression node and its children */
-  auto ToString() const -> std::string override { return fmt::format("{}({})", expr_type_, *GetChildAt(0)); }
+  /** @return the string representation of the expression node and its children
+   */
+  auto ToString() const -> std::string override {
+    return fmt::format("{}({})", expr_type_, *GetChildAt(0));
+  }
 
   BUSTUB_EXPR_CLONE_WITH_CHILDREN(StringExpression);
 
